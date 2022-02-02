@@ -2,9 +2,15 @@ package main
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 func main() {
 	r := mux.NewRouter()
@@ -24,5 +30,15 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleWs(w http.ResponseWriter, r *http.Request) {
-
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	p := player{
+		conn: conn,
+		send: make(chan []byte, 256),
+	}
+	go p.startMessageReading()
+	go p.startMessageWriting()
 }
