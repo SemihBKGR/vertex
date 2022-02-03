@@ -10,6 +10,7 @@ const dataMoveX = "x"
 const dataMoveY = "y"
 const dataPlayer = "p"
 const dataScore = "s"
+const dataWalls = "w"
 
 class Message {
     action

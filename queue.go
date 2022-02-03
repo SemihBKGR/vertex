@@ -45,12 +45,13 @@ func (q *queue) startMatching() {
 			for len(q.players) > 1 {
 				p1 := q.popPlayer()
 				p2 := q.popPlayer()
-				g := newGame(p1, p2)
+				g, c := newGame(p1, p2)
 				p1.game = g
 				p2.game = g
 				go g.startGame()
 				dataP1 := make(map[string]interface{})
 				dataP1[dataPlayer] = false
+				dataP1[dataWalls] = c
 				mP1 := &message{
 					Action: actionMatched,
 					Data:   dataP1,
@@ -58,6 +59,7 @@ func (q *queue) startMatching() {
 				p1.sendMessage(mP1)
 				dataP2 := make(map[string]interface{})
 				dataP2[dataPlayer] = true
+				dataP2[dataWalls] = c
 				mP2 := &message{
 					Action: actionMatched,
 					Data:   dataP2,

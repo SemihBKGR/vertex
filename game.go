@@ -3,10 +3,13 @@ package main
 import (
 	"errors"
 	"log"
+	"math/rand"
 )
 
 const defaultWidth = 20
 const defaultHeight = 15
+const defaultMinWallCount = 10
+const defaultMaxWallCount = 30
 
 type game struct {
 	turn    bool
@@ -18,25 +21,30 @@ type game struct {
 	scoreP2 int
 }
 
-func newGame(p1, p2 *player) *game {
-	blocksAll := [defaultHeight][]*block{}
+func newGame(p1, p2 *player) (*game, []*coordinate) {
+	blocks := make([][]*block, defaultHeight)
 	for i := 0; i < defaultHeight; i++ {
-		blocksRow := [defaultWidth]*block{}
+		blocksRow := make([]*block, defaultWidth)
 		for j := 0; j < defaultWidth; j++ {
-			blocksRow[j] = &block{
+			b := &block{
 				x: j,
 				y: i,
 			}
+			blocksRow[j] = b
 		}
-		blocksAll[i] = blocksRow[:]
+		blocks[i] = blocksRow
 	}
-	blocks := blocksAll[:]
-	return &game{
+	coordinates := randomCoordinate(defaultMinWallCount, defaultMaxWallCount, defaultWidth, defaultHeight)
+	for _, coordinate := range coordinates {
+		blocks[coordinate.Y][coordinate.X].s = -1
+	}
+	g := &game{
 		move:    make(chan *move),
 		blocks:  blocks,
 		player1: p1,
 		player2: p2,
 	}
+	return g, coordinates
 }
 
 func (g *game) startGame() {
@@ -91,4 +99,25 @@ type move struct {
 	p bool
 	x int
 	y int
+}
+
+func randomCoordinate(minWallCount, maxWallCount, width, height int) []*coordinate {
+	count := int(rand.Int31n(int32(maxWallCount-minWallCount))) + minWallCount
+	coordinates := make([]*coordinate, count)
+	coordinateMap := make(map[*coordinate]interface{})
+	for i := 0; i < count; {
+		x := int(rand.Int31n(int32(width)))
+		y := int(rand.Int31n(int32(height)))
+		c := &coordinate{
+			X: x,
+			Y: y,
+		}
+		if _, ok := coordinateMap[c]; ok {
+			continue
+		}
+		coordinates[i] = c
+		coordinateMap[c] = nil
+		i++
+	}
+	return coordinates
 }

@@ -45,12 +45,16 @@ func (p *player) processMessage(msg []byte) {
 			log.Println(err)
 			return
 		}
-		mv, err := moveData(m)
+		c, err := moveData(m)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		mv.p = p.game.player1 != p
+		mv := &move{
+			x: c.X,
+			y: c.Y,
+			p: p.game.player1 != p,
+		}
 		p.game.move <- mv
 	}
 }

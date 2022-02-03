@@ -16,6 +16,7 @@ const (
 	dataMoveY     = "y"
 	dataPlayer    = "p"
 	dataScore     = "s"
+	dataWalls     = "w"
 )
 
 type message struct {
@@ -23,7 +24,13 @@ type message struct {
 	Data   map[string]interface{} `json:"data,omitempty"`
 }
 
-func moveData(m *message) (*move, error) {
+type coordinate struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+//todo send coordinate as json instead of two different data
+func moveData(m *message) (*coordinate, error) {
 	if m.Data != nil {
 		dataX, okX := m.Data[dataMoveX]
 		dataY, okY := m.Data[dataMoveY]
@@ -31,11 +38,11 @@ func moveData(m *message) (*move, error) {
 			x, okX := dataX.(float64)
 			y, okY := dataY.(float64)
 			if okX && okY {
-				m := &move{
-					x: int(x),
-					y: int(y),
+				c := &coordinate{
+					X: int(x),
+					Y: int(y),
 				}
-				return m, nil
+				return c, nil
 			}
 			return nil, errors.New("move data types in message are incompatible")
 		}
