@@ -49,11 +49,20 @@ func (q *queue) startMatching() {
 				p1.game = g
 				p2.game = g
 				go g.startGame()
-				m := &message{
+				dataP1 := make(map[string]interface{})
+				dataP1[dataPlayer] = false
+				mP1 := &message{
 					Action: actionMatched,
+					Data:   dataP1,
 				}
-				p1.sendMessage(m)
-				p2.sendMessage(m)
+				p1.sendMessage(mP1)
+				dataP2 := make(map[string]interface{})
+				dataP2[dataPlayer] = true
+				mP2 := &message{
+					Action: actionMatched,
+					Data:   dataP2,
+				}
+				p2.sendMessage(mP2)
 			}
 		}
 	}

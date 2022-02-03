@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"time"
@@ -52,9 +51,7 @@ func (p *player) processMessage(msg []byte) {
 			return
 		}
 		mv.p = p.game.player1 != p
-		fmt.Println("send")
 		p.game.move <- mv
-		fmt.Println("send done")
 	}
 }
 

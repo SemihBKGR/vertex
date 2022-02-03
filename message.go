@@ -5,16 +5,17 @@ import (
 )
 
 const (
-	actionJoin     = "join"
-	actionLeave    = "leave"
-	actionJoined   = "joined"
-	actionLeft     = "left"
-	actionMatched  = "matched"
-	actionMove     = "move"
-	actionMoved    = "moved"
-	dataMoveX      = "x"
-	dataMoveY      = "y"
-	dataMovePlayer = "p"
+	actionJoin    = "join"
+	actionLeave   = "leave"
+	actionJoined  = "joined"
+	actionLeft    = "left"
+	actionMatched = "matched"
+	actionMove    = "move"
+	actionMoved   = "moved"
+	dataMoveX     = "x"
+	dataMoveY     = "y"
+	dataPlayer    = "p"
+	dataScore     = "s"
 )
 
 type message struct {

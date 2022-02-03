@@ -6,6 +6,11 @@ const actionMatched = "matched"
 const actionMove = "move"
 const actionMoved = "moved"
 
+const dataMoveX = "x"
+const dataMoveY = "y"
+const dataPlayer = "p"
+const dataScore = "s"
+
 class Message {
     action
     data
