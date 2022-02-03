@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"time"
@@ -38,6 +40,21 @@ func (p *player) processMessage(msg []byte) {
 		gameQueue.join <- p
 	case actionLeave:
 		gameQueue.leave <- p
+	case actionMove:
+		if p.game == nil {
+			err := errors.New("player has not any ongoing game")
+			log.Println(err)
+			return
+		}
+		mv, err := moveData(m)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		mv.p = p.game.player1 != p
+		fmt.Println("send")
+		p.game.move <- mv
+		fmt.Println("send done")
 	}
 }
 

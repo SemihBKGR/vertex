@@ -24,14 +24,20 @@ func (q *queue) startMatching() {
 		case player := <-q.join:
 			if _, ok := q.players[player]; !ok {
 				q.players[player] = nil
-				player.sendMessage(joinedMessage())
+				m := &message{
+					Action: actionJoined,
+				}
+				player.sendMessage(m)
 			} else {
 				log.Println("Player is already in queue")
 			}
 		case player := <-q.leave:
 			if _, ok := q.players[player]; ok {
 				delete(q.players, player)
-				player.sendMessage(leftMessage())
+				m := &message{
+					Action: actionLeft,
+				}
+				player.sendMessage(m)
 			} else {
 				log.Println("Player is already not in queue")
 			}
@@ -39,14 +45,15 @@ func (q *queue) startMatching() {
 			for len(q.players) > 1 {
 				p1 := q.popPlayer()
 				p2 := q.popPlayer()
-				g := &game{
-					player1: p1,
-					player2: p2,
-				}
+				g := newGame(p1, p2)
 				p1.game = g
 				p2.game = g
-				p1.sendMessage(matchedMessage())
-				p2.sendMessage(matchedMessage())
+				go g.startGame()
+				m := &message{
+					Action: actionMatched,
+				}
+				p1.sendMessage(m)
+				p2.sendMessage(m)
 			}
 		}
 	}
