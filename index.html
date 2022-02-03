@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel="stylesheet" type="text/css" href="static/index.css">
+    <link href="static/index.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-<h1>Vertex</h1>
-<div>
-    <canvas width="800px" height="600px" id="game-canvas"></canvas>
+<div class="container">
+    <h1>Vertex</h1>
+    <div id="start-div">
+        <button id="start-button">Start</button>
+    </div>
+    <div id="queue-div">
+        <button id="queue-button">Join</button>
+    </div>
+    <div id="board-div">
+        <canvas height="600px" id="game-board" width="800px"></canvas>
+    </div>
+
 </div>
+<script src="static/board.js"></script>
 <script src="static/index.js"></script>
 <script src="static/ws.js"></script>
 </body>

@@ -1,110 +1,59 @@
-class GameBoard {
-    canvas
-    context
-    width
-    height
-    blockMatrix
-    blockWidth
-    blockHeight
-    constructor(canvas, width, height) {
-        this.canvas = canvas
-        this.width = width
-        this.height = height
-        this.context = canvas.getContext("2d")
-        this.blockMatrix = []
-        this.blockWidth = canvas.width / width
-        this.blockHeight = canvas.height / height
-        for (let i = 0; i < height; i++) {
-            let blockArray = []
-            for (let j = 0; j < width; j++) {
-                blockArray.push(new Block(j, i, 0))
+document.getElementById("board-div").style.visibility = "hidden"
+document.getElementById("queue-div").style.visibility = "hidden"
+
+document.getElementById("start-button").addEventListener("click", function (_) {
+    console.log(gameBoard.blocks)
+    document.getElementById("start-div").style.visibility = "hidden"
+    document.getElementById("queue-div").style.visibility = "visible"
+    connect()
+    addOnMessageReceiveListener(function (message) {
+        console.log(gameBoard.blocks)
+        console.log(message)
+        if (message.action === actionJoined) {
+            document.getElementById("queue-button").textContent = "Leave"
+        } else if (message.action === actionLeft) {
+            document.getElementById("queue-button").textContent = "Join"
+        } else if (message.action === actionMatched) {
+            document.getElementById("queue-div").style.visibility = "hidden"
+            document.getElementById("board-div").style.visibility = "visible"
+        } else if(message.action===actionMoved){
+            const x=message.data["x"]
+            const y=message.data["y"]
+            const p=message.data["p"]
+            console.log(gameBoard.blocks)
+            console.log(gameBoard.blocks[0].length)
+            let block=gameBoard.blocks[y][x]
+            if (!p){
+                block.s=1
+                fillBlock(gameBoard,block,"green",3)
+            }else{
+                block.s=2
+                fillBlock(gameBoard,block,"blue",3)
             }
-            this.blockMatrix.push(blockArray)
-        }
-    }
-}
-
-class Block {
-    x
-    y
-    s
-    constructor(x, y, s) {
-        this.x = x;
-        this.y = y;
-        this.s = s;
-    }
-}
-
-function drawGrid(gameBoard) {
-    gameBoard.context.beginPath()
-    for (let i = gameBoard.blockWidth; i < gameBoard.canvas.width; i += gameBoard.blockWidth) {
-        gameBoard.context.moveTo(i, 0)
-        gameBoard.context.lineTo(i, gameBoard.canvas.height)
-    }
-    for (let i = gameBoard.blockHeight; i < gameBoard.canvas.height; i += gameBoard.blockHeight) {
-        gameBoard.context.moveTo(0, i)
-        gameBoard.context.lineTo(gameBoard.canvas.width, i)
-    }
-    gameBoard.context.stroke()
-}
-
-function addGridActionListener(gameBoard, clickCallback) {
-    let hoverBlock = undefined
-    gameBoard.canvas.addEventListener("mousemove", function (event) {
-        if (hoverBlock !== undefined && hoverBlock.s === 0) {
-            fillBlock(gameBoard, hoverBlock, "white")
-        }
-        drawGrid(gameBoard)
-        let mousePosition = getMousePosition(gameBoard.canvas, event)
-        hoverBlock = getBlock(gameBoard, mousePosition)
-        if (hoverBlock !== undefined && hoverBlock.s === 0) {
-            fillBlock(gameBoard, hoverBlock, "black")
         }
     })
-    gameBoard.canvas.addEventListener("click", function (_) {
-        let block = gameBoard.blockMatrix[hoverBlock.y][hoverBlock.x]
-        if (block !== undefined && block.s === 0) {
-            block.s = 1
-            clickCallback(gameBoard, block)
-        }
-    })
-    gameBoard.canvas.addEventListener("mouseleave", function (_) {
-        hoverBlock = undefined
-    })
-}
+})
 
-function getBlock(gameBoard, mousePosition) {
-    let x = Math.floor(mousePosition.x / gameBoard.blockWidth)
-    let y = Math.floor(mousePosition.y / gameBoard.blockHeight)
-    if (gameBoard.width > x && gameBoard.height > y) {
-        return gameBoard.blockMatrix[y][x]
+document.getElementById("queue-div").addEventListener("click", function (_) {
+    if (document.getElementById("queue-button").textContent === "Join") {
+        sendMessage(actionJoinMessage)
+    } else if (document.getElementById("queue-button").textContent === "Leave") {
+        sendMessage(actionLeaveMessage)
     }
-    return undefined
-}
+})
 
-function fillBlock(gameBoard, block, fillStyle) {
-    gameBoard.context.fillStyle = fillStyle
-    gameBoard.context.fillRect(block.x * gameBoard.blockWidth, block.y * gameBoard.blockHeight, gameBoard.blockWidth, gameBoard.blockHeight)
-}
 
-function getMousePosition(canvas, event) {
-    let rect = canvas.getBoundingClientRect();
-    return {
-        x: (event.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
-        y: (event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-    };
-}
-
-// -------------------------------------------------------
-const canvas = document.getElementById("game-canvas")
+const canvas = document.getElementById("game-board")
 const width = 20
 const height = 15
 const gameBoard = new GameBoard(canvas, width, height)
+console.log(gameBoard.blocks)
 drawGrid(gameBoard)
 addGridActionListener(gameBoard, clicked)
 
 function clicked(gameGrid, block) {
-    console.log(block)
+    let message = new Message(actionMove)
+    message.data["x"] = block.x
+    message.data["y"] = block.y
+    sendMessage(message)
 }
-
-// -------------------------------------------------------
