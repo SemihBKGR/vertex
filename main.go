@@ -12,7 +12,13 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+var gameQueue *queue
+
 func main() {
+
+	gameQueue = newQueue()
+	go gameQueue.startMatching()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", serveIndex)
 	r.HandleFunc("/ws", handleWs)
@@ -23,6 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
 	"time"
@@ -26,6 +26,30 @@ type player struct {
 	send chan []byte
 }
 
+func (p *player) processMessage(msg []byte) {
+	m := &message{}
+	err := json.Unmarshal(msg, m)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	switch m.Action {
+	case actionJoin:
+		gameQueue.join <- p
+	case actionLeave:
+		gameQueue.leave <- p
+	}
+}
+
+func (p *player) sendMessage(m *message) {
+	msg, err := json.Marshal(m)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	p.send <- msg
+}
+
 func (p *player) startMessageReading() {
 	defer func() {
 		err := p.conn.Close()
@@ -45,7 +69,7 @@ func (p *player) startMessageReading() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		fmt.Println(message)
+		p.processMessage(message)
 	}
 }
 
@@ -73,7 +97,6 @@ func (p *player) startMessageWriting() {
 				return
 			}
 			w.Write(message)
-
 			n := len(p.send)
 			for i := 0; i < n; i++ {
 				w.Write(newline)

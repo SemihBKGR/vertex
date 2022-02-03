@@ -1,3 +1,3 @@
-# vertex
+# Vertex
 
-vertex game 
+Vertex is a browser based strategy game.
