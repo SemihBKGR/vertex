@@ -29,11 +29,13 @@ class Block {
     x
     y
     s
+    m
 
     constructor(x, y, s) {
         this.x = x;
         this.y = y;
         this.s = s;
+        this.m = false
     }
 }
 
@@ -60,16 +62,20 @@ function drawGrid(gameBoard) {
     gameBoard.context.stroke()
 }
 
-function addGridActionListener(gameBoard, clickCallback) {
+function addGridActionListener(gameBoard, blockHoverColor, blockDefaultColor, blockHighlightedColor, clickCallback) {
     let hoverBlock = undefined
     gameBoard.canvas.addEventListener("mousemove", function (event) {
         if (hoverBlock !== undefined && hoverBlock.s === 0) {
-            fillBlock(gameBoard, hoverBlock, "white", 3)
+            if (hoverBlock.m) {
+                fillBlock(gameBoard, hoverBlock, blockHighlightedColor, 3)
+            } else {
+                fillBlock(gameBoard, hoverBlock, blockDefaultColor, 3)
+            }
         }
         let mousePosition = getMousePosition(gameBoard.canvas, event)
         hoverBlock = getBlock(gameBoard, mousePosition)
         if (hoverBlock !== undefined && hoverBlock.s === 0) {
-            fillBlock(gameBoard, hoverBlock, "black", 3)
+            fillBlock(gameBoard, hoverBlock, blockHoverColor, 3)
         }
     })
     gameBoard.canvas.addEventListener("click", function (_) {
@@ -104,9 +110,54 @@ function fillBlock(gameBoard, block, fillStyle, margin) {
         gameBoard.blockHeight - (margin * 2))
 }
 
+function fillMarkedBlocks(gameBoard, fillStyle, margin) {
+    for (let i = 0; i < gameBoard.height; i++) {
+        for (let j = 0; j < gameBoard.width; j++) {
+            const block = gameBoard.blocks[i][j]
+            if (block.m && block.s === 0) {
+                fillBlock(gameBoard, block, fillStyle, margin)
+            }
+        }
+    }
+}
+
 function getMousePosition(canvas, event) {
     let rect = canvas.getBoundingClientRect();
     let x = (event.clientX - rect.left) / (rect.right - rect.left) * canvas.width
     let y = (event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
     return new MousePosition(x, y)
+}
+
+function markMovePossibilities(gameBoard, player) {
+    for (let i = 0; i < gameBoard.height; i++) {
+        for (let j = 0; j < gameBoard.width; j++) {
+            let block = gameBoard.blocks[i][j]
+            if ((block.s === 1 && !player) || (block.s === 2 && player)) {
+                let blockY = i
+                while (--blockY >= 0 && gameBoard.blocks[blockY][j].s === 0) {
+                    gameBoard.blocks[blockY][j].m = true
+                }
+                blockY = i
+                while (++blockY < gameBoard.height && gameBoard.blocks[blockY][j].s === 0) {
+                    gameBoard.blocks[blockY][j].m = true
+                }
+                let blockX = j
+                while (--blockX >= 0 && gameBoard.blocks[i][blockX].s === 0) {
+                    gameBoard.blocks[i][blockX].m = true
+                }
+                blockX = j
+                while (++blockX < gameBoard.width && gameBoard.blocks[i][blockX].s === 0) {
+                    gameBoard.blocks[i][blockX].m = true
+                }
+            }
+        }
+    }
+}
+
+function unmarkMovePossibilities(gameBoard) {
+    for (let i = 0; i < gameBoard.height; i++) {
+        for (let j = 0; j < gameBoard.width; j++) {
+            gameBoard.blocks[i][j].m = false
+        }
+    }
 }

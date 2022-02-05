@@ -15,6 +15,8 @@ type game struct {
 	turn    bool
 	move    chan *move
 	blocks  [][]*block
+	width   int
+	height  int
 	player1 *player
 	player2 *player
 	scoreP1 int
@@ -41,6 +43,8 @@ func newGame(p1, p2 *player) (*game, []*coordinate) {
 	g := &game{
 		move:    make(chan *move),
 		blocks:  blocks,
+		width:   defaultWidth,
+		height:  defaultHeight,
 		player1: p1,
 		player2: p2,
 	}
@@ -51,17 +55,11 @@ func (g *game) startGame() {
 	for {
 		select {
 		case mv := <-g.move:
-			if mv.p != g.turn {
-				err := errors.New("move is not belong to player who has turn")
+			if err := g.validMovement(mv); err != nil {
 				log.Println(err)
 				continue
 			}
 			b := g.blocks[mv.y][mv.x]
-			if b.s != 0 {
-				err := errors.New("invalid move")
-				log.Println(err)
-				continue
-			}
 			if !mv.p {
 				b.s = 1
 				g.scoreP1++
@@ -87,6 +85,75 @@ func (g *game) startGame() {
 			g.turn = !g.turn
 		}
 	}
+}
+
+func (g *game) validMovement(mv *move) error {
+	if mv.p != g.turn {
+		return errors.New("move is not belong to player who has turn")
+	}
+	b := g.blocks[mv.y][mv.x]
+	if b.s != 0 {
+		return errors.New("move over the non-empty block")
+	}
+	if !g.reachedBlock(mv) {
+		return errors.New("move over the unreached block")
+	}
+	return nil
+}
+
+func (g *game) reachedBlock(mv *move) bool {
+	if (!mv.p && g.scoreP1 == 0) || (mv.p && g.scoreP2 == 0) {
+		return true
+	}
+	y := mv.y - 1
+	for y >= 0 {
+		s := g.blocks[y][mv.x].s
+		if (s == 1 && !mv.p) || (s == 2 && mv.p) {
+			return true
+		}
+		if s == 0 {
+			y--
+			continue
+		}
+		break
+	}
+	y = mv.y + 1
+	for y < g.height {
+		s := g.blocks[y][mv.x].s
+		if (s == 1 && !mv.p) || (s == 2 && mv.p) {
+			return true
+		}
+		if s == 0 {
+			y++
+			continue
+		}
+		break
+	}
+	x := mv.x - 1
+	for x >= 0 {
+		s := g.blocks[mv.y][x].s
+		if (s == 1 && !mv.p) || (s == 2 && mv.p) {
+			return true
+		}
+		if s == 0 {
+			x--
+			continue
+		}
+		break
+	}
+	x = mv.x + 1
+	for x < g.width {
+		s := g.blocks[mv.y][x].s
+		if (s == 1 && !mv.p) || (s == 2 && mv.p) {
+			return true
+		}
+		if s == 0 {
+			x++
+			continue
+		}
+		break
+	}
+	return false
 }
 
 type block struct {
