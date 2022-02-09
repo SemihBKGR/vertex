@@ -27,10 +27,10 @@ type game struct {
 	scoreP1 int
 	scoreP2 int
 	reason  string
-	winner  bool
+	winner  int
 }
 
-func newGame(p1, p2 *player) (*game, []*coordinate) {
+func newGame(p1, p2 *player) (*game, []*coordinate, []*coordinate, []*coordinate) {
 	blocks := make([][]*block, defaultHeight)
 	for i := 0; i < defaultHeight; i++ {
 		blocksRow := make([]*block, defaultWidth)
@@ -49,6 +49,29 @@ func newGame(p1, p2 *player) (*game, []*coordinate) {
 			blocks[coordinate.Y][coordinate.X].s = -1
 		}
 	*/
+
+	c1im1 := &coordinate{
+		X: defaultWidth/2 + 1,
+		Y: defaultHeight / 2,
+	}
+	c2im1 := &coordinate{
+		X: defaultWidth / 2,
+		Y: defaultHeight/2 + 1,
+	}
+	c1im2 := &coordinate{
+		X: defaultWidth/2 + 1,
+		Y: defaultHeight/2 + 1,
+	}
+	c2im2 := &coordinate{
+		X: defaultWidth / 2,
+		Y: defaultHeight / 2,
+	}
+
+	blocks[c1im1.Y][c1im1.X].s = 1
+	blocks[c2im1.Y][c2im1.X].s = 1
+	blocks[c1im2.Y][c1im1.X].s = 2
+	blocks[c2im2.Y][c2im1.X].s = 2
+
 	g := &game{
 		move:    make(chan *move),
 		end:     make(chan *end),
@@ -59,7 +82,7 @@ func newGame(p1, p2 *player) (*game, []*coordinate) {
 		player2: p2,
 	}
 	//return g, coordinates
-	return g, make([]*coordinate, 0)
+	return g, make([]*coordinate, 0), []*coordinate{c1im1, c2im1}, []*coordinate{c1im2, c2im2}
 }
 
 func (g *game) startGame() {
@@ -76,10 +99,15 @@ func (g *game) startGame() {
 					Action: actionEnded,
 					Data:   d,
 				}
-				g.player1.game = nil
-				g.player2.game = nil
 				g.player1.sendMessage(m)
 				g.player2.sendMessage(m)
+				g.player1.game = nil
+				g.player2.game = nil
+				if e.player {
+					g.winner = 1
+				} else {
+					g.winner = 2
+				}
 			case reasonComplete:
 				d := make(map[string]interface{})
 				d[dataReason] = e.reason
@@ -91,10 +119,17 @@ func (g *game) startGame() {
 					Action: actionEnded,
 					Data:   d,
 				}
-				g.player1.game = nil
-				g.player2.game = nil
 				g.player1.sendMessage(m)
 				g.player2.sendMessage(m)
+				g.player1.game = nil
+				g.player2.game = nil
+				if g.scoreP1 > g.scoreP2 {
+					g.winner = 1
+				} else if g.scoreP1 < g.scoreP2 {
+					g.winner = 2
+				} else {
+					g.winner = 3
+				}
 			default:
 				continue
 			}
@@ -147,9 +182,6 @@ func (g *game) validMovement(mv *move) error {
 }
 
 func (g *game) reachedBlock(mv *move) bool {
-	if (!mv.p && g.scoreP1 == 0) || (mv.p && g.scoreP2 == 0) {
-		return true
-	}
 	y := mv.y - 1
 	for y >= 0 {
 		s := g.blocks[y][mv.x].s
@@ -202,7 +234,7 @@ func (g *game) reachedBlock(mv *move) bool {
 }
 
 func (g *game) sendToEndGame(p *player, reason string) error {
-	if g.reason != "" {
+	if g.winner != 0 {
 		return errors.New("game has already been ended")
 	}
 	switch reason {

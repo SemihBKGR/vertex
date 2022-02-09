@@ -25,13 +25,33 @@ document.getElementById("start-button").addEventListener("click", function (_) {
         } else if (message.action === actionLeft) {
             document.getElementById("queue-button").textContent = "Join"
         } else if (message.action === actionMatched) {
-            let walls = message.data[dataWalls]
+            gp = message.data[dataPlayer]
+            const walls = message.data[dataWalls]
             for (const wall of walls) {
                 const block = gameBoard.blocks[wall.y][wall.x]
                 block.s = -1
                 fillBlock(gameBoard, block, blockWallColor, 3)
             }
-            gp = message.data[dataPlayer]
+            const imp1 = message.data[dataInitialMoveP1]
+            for (const im of imp1) {
+                const block = gameBoard.blocks[im.y][im.x]
+                block.s = 1
+                if (gp){
+                    fillBlock(gameBoard, block, blockOpponentColor, 3)
+                }else{
+                    fillBlock(gameBoard, block, blockYourColor, 3)
+                }
+            }
+            const imp2 = message.data[dataInitialMoveP2]
+            for (const im of imp2) {
+                const block = gameBoard.blocks[im.y][im.x]
+                block.s = 2
+                if (gp){
+                    fillBlock(gameBoard, block, blockYourColor, 3)
+                }else{
+                    fillBlock(gameBoard, block, blockOpponentColor, 3)
+                }
+            }
             if (!gp) {
                 yourTitle.style.color = titleColorTurn
             } else {
@@ -41,6 +61,8 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             e = false
             document.getElementById("queue-div").style.visibility = "hidden"
             document.getElementById("board-div").style.visibility = "visible"
+            markMovePossibilities(gameBoard, tp)
+            fillMarkedBlocks(gameBoard, blockHighlightColor, 3)
         } else if (message.action === actionMoved) {
             const x = message.data[dataMoveX]
             const y = message.data[dataMoveY]
@@ -72,9 +94,9 @@ document.getElementById("start-button").addEventListener("click", function (_) {
         } else if (message.action === actionEnded) {
             e = true
             const r = message.data[dataReason]
-            console.log("done - " + r)
-            document.getElementById("queue-div").textContent = "Join"
             document.getElementById("queue-div").style.visibility = "visible"
+            document.getElementById("queue-button").textContent = "Join"
+            console.log("Reason: " + r)
         }
     })
 })

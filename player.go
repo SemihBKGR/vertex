@@ -58,6 +58,11 @@ func (p *player) processMessage(msg []byte) {
 		}
 		p.game.move <- mv
 	case actionEnd:
+		if p.game == nil {
+			err := errors.New("player has not any ongoing game")
+			log.Println(err)
+			return
+		}
 		r, err := reasonData(m)
 		if err != nil {
 			log.Println(err)
