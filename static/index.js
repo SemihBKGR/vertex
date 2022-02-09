@@ -10,6 +10,7 @@ const titleColorWait = "#343333"
 
 let gp
 let tp
+let e
 
 document.getElementById("board-div").style.visibility = "hidden"
 document.getElementById("queue-div").style.visibility = "hidden"
@@ -37,6 +38,7 @@ document.getElementById("start-button").addEventListener("click", function (_) {
                 opponentTitle.style.color = titleColorTurn
             }
             tp = false
+            e = false
             document.getElementById("queue-div").style.visibility = "hidden"
             document.getElementById("board-div").style.visibility = "visible"
         } else if (message.action === actionMoved) {
@@ -67,6 +69,12 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             unmarkMovePossibilities(gameBoard)
             markMovePossibilities(gameBoard, tp)
             fillMarkedBlocks(gameBoard, blockHighlightColor, 3)
+        } else if (message.action === actionEnded) {
+            e = true
+            const r = message.data[dataReason]
+            console.log("done - " + r)
+            document.getElementById("queue-div").textContent = "Join"
+            document.getElementById("queue-div").style.visibility = "visible"
         }
     })
 })
@@ -87,12 +95,14 @@ drawGrid(gameBoard)
 addGridActionListener(gameBoard, blockHoverColor, blockDefaultColor, blockHighlightColor, clicked)
 
 function clicked(gameGrid, block) {
-    if (gp === tp) {
-        if (block.s === 0) {
-            let message = new Message(actionMove)
-            message.data[dataMoveX] = block.x
-            message.data[dataMoveY] = block.y
-            sendMessage(message)
+    if (!e) {
+        if (gp === tp) {
+            if (block.s === 0) {
+                let message = new Message(actionMove)
+                message.data[dataMoveX] = block.x
+                message.data[dataMoveY] = block.y
+                sendMessage(message)
+            }
         }
     }
 }

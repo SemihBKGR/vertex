@@ -12,11 +12,17 @@ const (
 	actionMatched = "matched"
 	actionMove    = "move"
 	actionMoved   = "moved"
+	actionEnd     = "end"
+	actionEnded   = "ended"
 	dataMoveX     = "x"
 	dataMoveY     = "y"
 	dataPlayer    = "p"
 	dataScore     = "s"
 	dataWalls     = "w"
+	dataReason    = "r"
+	dataWinner    = "winner"
+	dataScoreP1   = "score-p1"
+	dataScoreP2   = "score-p2"
 )
 
 type message struct {
@@ -49,4 +55,19 @@ func moveData(m *message) (*coordinate, error) {
 		return nil, errors.New("move data in message are missing")
 	}
 	return nil, errors.New("data in message is nil")
+}
+
+func reasonData(m *message) (string, error) {
+	if m.Data != nil {
+		dataReason, ok := m.Data[dataReason]
+		if ok {
+			reason, ok := dataReason.(string)
+			if ok {
+				return reason, nil
+			}
+			return "", errors.New("reason data types in message are incompatible")
+		}
+		return "", errors.New("reason data in message are missing")
+	}
+	return "", errors.New("data in message is nil")
 }

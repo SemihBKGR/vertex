@@ -11,9 +11,14 @@ const defaultHeight = 15
 const defaultMinWallCount = 10
 const defaultMaxWallCount = 30
 
+const reasonDisconnect = "disconnect"
+const reasonResign = "resign"
+const reasonComplete = "complete"
+
 type game struct {
 	turn    bool
 	move    chan *move
+	end     chan *end
 	blocks  [][]*block
 	width   int
 	height  int
@@ -21,6 +26,8 @@ type game struct {
 	player2 *player
 	scoreP1 int
 	scoreP2 int
+	reason  string
+	winner  bool
 }
 
 func newGame(p1, p2 *player) (*game, []*coordinate) {
@@ -36,24 +43,62 @@ func newGame(p1, p2 *player) (*game, []*coordinate) {
 		}
 		blocks[i] = blocksRow
 	}
-	coordinates := randomCoordinate(defaultMinWallCount, defaultMaxWallCount, defaultWidth, defaultHeight)
-	for _, coordinate := range coordinates {
-		blocks[coordinate.Y][coordinate.X].s = -1
-	}
+	/*
+		coordinates := randomCoordinate(defaultMinWallCount, defaultMaxWallCount, defaultWidth, defaultHeight)
+		for _, coordinate := range coordinates {
+			blocks[coordinate.Y][coordinate.X].s = -1
+		}
+	*/
 	g := &game{
 		move:    make(chan *move),
+		end:     make(chan *end),
 		blocks:  blocks,
 		width:   defaultWidth,
 		height:  defaultHeight,
 		player1: p1,
 		player2: p2,
 	}
-	return g, coordinates
+	//return g, coordinates
+	return g, make([]*coordinate, 0)
 }
 
 func (g *game) startGame() {
+	log.Printf("game has been started")
 	for {
 		select {
+		case e := <-g.end:
+			switch e.reason {
+			case reasonDisconnect, reasonResign:
+				d := make(map[string]interface{})
+				d[dataReason] = e.reason
+				d[dataWinner] = !e.player
+				m := &message{
+					Action: actionEnded,
+					Data:   d,
+				}
+				g.player1.game = nil
+				g.player2.game = nil
+				g.player1.sendMessage(m)
+				g.player2.sendMessage(m)
+			case reasonComplete:
+				d := make(map[string]interface{})
+				d[dataReason] = e.reason
+				d[dataWinner] = !e.player
+				d[dataScoreP1] = g.scoreP1
+				d[dataScoreP2] = g.scoreP2
+				d[dataWinner] = g.scoreP1 < g.scoreP2
+				m := &message{
+					Action: actionEnded,
+					Data:   d,
+				}
+				g.player1.game = nil
+				g.player2.game = nil
+				g.player1.sendMessage(m)
+				g.player2.sendMessage(m)
+			default:
+				continue
+			}
+			return
 		case mv := <-g.move:
 			if err := g.validMovement(mv); err != nil {
 				log.Println(err)
@@ -156,6 +201,23 @@ func (g *game) reachedBlock(mv *move) bool {
 	return false
 }
 
+func (g *game) sendToEndGame(p *player, reason string) error {
+	if g.reason != "" {
+		return errors.New("game has already been ended")
+	}
+	switch reason {
+	case reasonDisconnect, reasonResign:
+		e := &end{
+			reason: reason,
+			player: g.player1 != p,
+		}
+		g.end <- e
+		return nil
+	default:
+		return errors.New("unknown reason")
+	}
+}
+
 type block struct {
 	s int
 	x int
@@ -166,6 +228,11 @@ type move struct {
 	p bool
 	x int
 	y int
+}
+
+type end struct {
+	reason string
+	player bool
 }
 
 func randomCoordinate(minWallCount, maxWallCount, width, height int) []*coordinate {

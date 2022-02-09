@@ -5,12 +5,21 @@ const actionLeft = "left"
 const actionMatched = "matched"
 const actionMove = "move"
 const actionMoved = "moved"
+const actionEnd = "end"
+const actionEnded = "ended"
 
 const dataMoveX = "x"
 const dataMoveY = "y"
 const dataPlayer = "p"
 const dataScore = "s"
 const dataWalls = "w"
+const dataReason = "r"
+const dataWinner = "winner"
+const dataScoreP1 = "score-p1"
+const dataScoreP2 = "score-p2"
+
+const reasonResign = "resign"
+const reasonDisconnect = "disconnect"
 
 class Message {
     action
@@ -20,7 +29,6 @@ class Message {
         this.action = action
         this.data = new Map()
     }
-
 }
 
 const actionJoinMessage = new Message(action = actionJoin)
@@ -32,6 +40,15 @@ let onMessageReceiveListener = []
 function connect() {
     if (window["WebSocket"]) {
         conn = new WebSocket("ws://" + document.location.host + "/ws");
+        conn.onopen = function (_) {
+            window.onbeforeunload = function (_) {
+                const data = new Map()
+                data[dataReason] = reasonDisconnect
+                const message = new Message(actionEnd)
+                message.data = data
+                sendMessage(message)
+            }
+        }
         conn.onclose = function (evt) {
             // on connection close
         };

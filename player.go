@@ -34,6 +34,7 @@ func (p *player) processMessage(msg []byte) {
 		log.Println(err)
 		return
 	}
+	log.Println(m)
 	switch m.Action {
 	case actionJoin:
 		gameQueue.join <- p
@@ -56,6 +57,16 @@ func (p *player) processMessage(msg []byte) {
 			p: p.game.player1 != p,
 		}
 		p.game.move <- mv
+	case actionEnd:
+		r, err := reasonData(m)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		err = p.game.sendToEndGame(p, r)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -128,6 +139,13 @@ func (p *player) startMessageWriting() {
 		case <-ticker.C:
 			p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := p.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				// conclude player's ongoing game
+				if p.game != nil {
+					err = p.game.sendToEndGame(p, reasonDisconnect)
+					if err != nil {
+						log.Println(err)
+					}
+				}
 				log.Printf("error: %v", err)
 				return
 			}
