@@ -25,6 +25,7 @@ document.getElementById("start-button").addEventListener("click", function (_) {
         } else if (message.action === actionLeft) {
             document.getElementById("queue-button").textContent = "Join"
         } else if (message.action === actionMatched) {
+            prepareForMatch()
             gp = message.data[dataPlayer]
             const walls = message.data[dataWalls]
             for (const wall of walls) {
@@ -36,9 +37,9 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             for (const im of imp1) {
                 const block = gameBoard.blocks[im.y][im.x]
                 block.s = 1
-                if (gp){
+                if (gp) {
                     fillBlock(gameBoard, block, blockOpponentColor, 3)
-                }else{
+                } else {
                     fillBlock(gameBoard, block, blockYourColor, 3)
                 }
             }
@@ -46,9 +47,9 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             for (const im of imp2) {
                 const block = gameBoard.blocks[im.y][im.x]
                 block.s = 2
-                if (gp){
+                if (gp) {
                     fillBlock(gameBoard, block, blockYourColor, 3)
-                }else{
+                } else {
                     fillBlock(gameBoard, block, blockOpponentColor, 3)
                 }
             }
@@ -85,10 +86,10 @@ document.getElementById("start-button").addEventListener("click", function (_) {
                 opponentTitle.style.color = titleColorWait
                 yourTitle.style.color = titleColorTurn
             }
-            const isolatedCoordinates=message.data[dataIsolated]
-            if (isolatedCoordinates.length!==0){
-                for (const isolatedCoordinate of isolatedCoordinates){
-                    const block=gameBoard.blocks[isolatedCoordinate.y][isolatedCoordinate.x]
+            const isolatedCoordinates = message.data[dataIsolated]
+            if (isolatedCoordinates.length !== 0) {
+                for (const isolatedCoordinate of isolatedCoordinates) {
+                    const block = gameBoard.blocks[isolatedCoordinate.y][isolatedCoordinate.x]
                     if (!p) {
                         block.s = 1
                     } else {
@@ -113,6 +114,7 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             document.getElementById("queue-button").textContent = "Join"
             yourTitle.style.color = titleColorWait
             opponentTitle.style.color = titleColorWait
+            resignButton.style.visibility="hidden"
         }
     })
 })
@@ -147,10 +149,26 @@ function clicked(gameGrid, block) {
 
 const yourTitle = document.getElementById("your-title")
 const opponentTitle = document.getElementById("opponent-title")
-yourTitle.style.color = titleColorWait
-opponentTitle.style.color = titleColorWait
 
 const yourScore = document.getElementById("your-score")
 const opponentScore = document.getElementById("opponent-score")
-yourScore.innerText = "Score: 0"
-opponentScore.innerText = "Score: 0"
+
+const resignButton=document.getElementById("resign-button")
+
+resignButton.addEventListener("click",function (_){
+    const data = new Map()
+    data[dataReason] = reasonResign
+    const message = new Message(actionEnd)
+    message.data = data
+    sendMessage(message)
+})
+
+function prepareForMatch() {
+    clearBoard(gameBoard)
+    yourTitle.style.color = titleColorWait
+    opponentTitle.style.color = titleColorWait
+    yourScore.innerText = "Score: 0"
+    opponentScore.innerText = "Score: 0"
+    resignButton.style.visibility="visible"
+}
+

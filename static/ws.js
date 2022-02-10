@@ -19,11 +19,11 @@ const dataScoreP1 = "score-p1"
 const dataScoreP2 = "score-p2"
 const dataInitialMoveP1 = "imp1"
 const dataInitialMoveP2 = "imp2"
-const dataIsolated      = "isolated"
+const dataIsolated = "isolated"
 
 const reasonResign = "resign"
 const reasonDisconnect = "disconnect"
-const reasonComplete="complete"
+const reasonComplete = "complete"
 
 class Message {
     action

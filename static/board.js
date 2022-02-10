@@ -161,3 +161,13 @@ function unmarkMovePossibilities(gameBoard) {
         }
     }
 }
+
+function clearBoard(gameBoard) {
+    for (const blocks of gameBoard.blocks) {
+        for (const block of blocks) {
+            block.s = 0
+            block.m = 0
+            fillBlock(gameBoard, block, "white", 3)
+        }
+    }
+}
