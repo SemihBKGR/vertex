@@ -23,6 +23,7 @@ const dataIsolated      = "isolated"
 
 const reasonResign = "resign"
 const reasonDisconnect = "disconnect"
+const reasonComplete="complete"
 
 class Message {
     action

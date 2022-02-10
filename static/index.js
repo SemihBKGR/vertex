@@ -87,7 +87,6 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             }
             const isolatedCoordinates=message.data[dataIsolated]
             if (isolatedCoordinates.length!==0){
-                console.log(isolatedCoordinates)
                 for (const isolatedCoordinate of isolatedCoordinates){
                     const block=gameBoard.blocks[isolatedCoordinate.y][isolatedCoordinate.x]
                     if (!p) {
@@ -112,7 +111,8 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             const r = message.data[dataReason]
             document.getElementById("queue-div").style.visibility = "visible"
             document.getElementById("queue-button").textContent = "Join"
-            console.log("Reason: " + r)
+            yourTitle.style.color = titleColorWait
+            opponentTitle.style.color = titleColorWait
         }
     })
 })

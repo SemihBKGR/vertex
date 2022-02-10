@@ -90,98 +90,116 @@ func (g *game) startGame() {
 	for {
 		select {
 		case e := <-g.end:
-			switch e.reason {
-			case reasonDisconnect, reasonResign:
-				d := make(map[string]interface{})
-				d[dataReason] = e.reason
-				d[dataWinner] = !e.player
-				m := &message{
-					Action: actionEnded,
-					Data:   d,
-				}
-				g.player1.sendMessage(m)
-				g.player2.sendMessage(m)
-				g.player1.game = nil
-				g.player2.game = nil
-				if e.player {
-					g.winner = 1
-				} else {
-					g.winner = 2
-				}
-			case reasonComplete:
-				d := make(map[string]interface{})
-				d[dataReason] = e.reason
-				d[dataWinner] = !e.player
-				d[dataScoreP1] = g.scoreP1
-				d[dataScoreP2] = g.scoreP2
-				d[dataWinner] = g.scoreP1 < g.scoreP2
-				m := &message{
-					Action: actionEnded,
-					Data:   d,
-				}
-				g.player1.sendMessage(m)
-				g.player2.sendMessage(m)
-				g.player1.game = nil
-				g.player2.game = nil
-				if g.scoreP1 > g.scoreP2 {
-					g.winner = 1
-				} else if g.scoreP1 < g.scoreP2 {
-					g.winner = 2
-				} else {
-					g.winner = 3
-				}
-			default:
-				continue
+			if g.endGame(e) {
+				return
 			}
-			return
 		case mv := <-g.move:
-			if err := g.validMovement(mv); err != nil {
-				log.Println(err)
-				continue
-			}
-			b := g.blocks[mv.y][mv.x]
-			if !mv.p {
-				b.s = 1
-				g.scoreP1++
-			} else {
-				b.s = 2
-				g.scoreP2++
-			}
-			ic := g.checkForIsolation(mv)
-			if icl := len(ic); icl > 0 {
-				log.Printf("Isolated: %d\n", len(ic))
-				if !mv.p {
-					for _, c := range ic {
-						g.blocks[c.Y][c.X].s = 1
-					}
-					g.scoreP1 += icl
-				} else {
-					for _, c := range ic {
-						g.blocks[c.Y][c.X].s = 2
-					}
-					g.scoreP2 += icl
-				}
-			}
-
-			data := make(map[string]interface{})
-			data[dataMoveX] = mv.x
-			data[dataMoveY] = mv.y
-			data[dataPlayer] = mv.p
-			data[dataIsolated] = ic
-			if !mv.p {
-				data[dataScore] = g.scoreP1
-			} else {
-				data[dataScore] = g.scoreP2
-			}
-			m := &message{
-				Action: actionMoved,
-				Data:   data,
-			}
-			g.player1.sendMessage(m)
-			g.player2.sendMessage(m)
-			g.turn = !g.turn
+			g.moveGame(mv)
 		}
 	}
+}
+
+func (g *game) moveGame(mv *move) bool {
+	if err := g.validMovement(mv); err != nil {
+		log.Println(err)
+		return false
+	}
+	b := g.blocks[mv.y][mv.x]
+	if !mv.p {
+		b.s = 1
+		g.scoreP1++
+	} else {
+		b.s = 2
+		g.scoreP2++
+	}
+	ic := g.checkForIsolation(mv)
+	if icl := len(ic); icl > 0 {
+		log.Printf("Isolated: %d\n", len(ic))
+		if !mv.p {
+			for _, c := range ic {
+				g.blocks[c.Y][c.X].s = 1
+			}
+			g.scoreP1 += icl
+		} else {
+			for _, c := range ic {
+				g.blocks[c.Y][c.X].s = 2
+			}
+			g.scoreP2 += icl
+		}
+	}
+
+	data := make(map[string]interface{})
+	data[dataMoveX] = mv.x
+	data[dataMoveY] = mv.y
+	data[dataPlayer] = mv.p
+	data[dataIsolated] = ic
+	if !mv.p {
+		data[dataScore] = g.scoreP1
+	} else {
+		data[dataScore] = g.scoreP2
+	}
+	m := &message{
+		Action: actionMoved,
+		Data:   data,
+	}
+	g.player1.sendMessage(m)
+	g.player2.sendMessage(m)
+	g.turn = !g.turn
+
+	if g.completed() {
+		e := &end{
+			reason: reasonComplete,
+		}
+		g.endGame(e)
+	}
+	return true
+}
+
+func (g *game) endGame(e *end) bool {
+	switch e.reason {
+	case reasonDisconnect, reasonResign:
+		d := make(map[string]interface{})
+		d[dataReason] = e.reason
+		d[dataWinner] = !e.player
+		m := &message{
+			Action: actionEnded,
+			Data:   d,
+		}
+		g.player1.sendMessage(m)
+		g.player2.sendMessage(m)
+		g.player1.game = nil
+		g.player2.game = nil
+		if e.player {
+			g.winner = 1
+		} else {
+			g.winner = 2
+		}
+	case reasonComplete:
+		d := make(map[string]interface{})
+		d[dataReason] = e.reason
+		d[dataWinner] = !e.player
+		d[dataScoreP1] = g.scoreP1
+		d[dataScoreP2] = g.scoreP2
+		d[dataWinner] = g.scoreP1 < g.scoreP2
+		m := &message{
+			Action: actionEnded,
+			Data:   d,
+		}
+		g.player1.sendMessage(m)
+		g.player2.sendMessage(m)
+		g.player1.game = nil
+		g.player2.game = nil
+		if g.scoreP1 > g.scoreP2 {
+			g.winner = 1
+		} else if g.scoreP1 < g.scoreP2 {
+			g.winner = 2
+		} else {
+			g.winner = 3
+		}
+	default:
+		return false
+	}
+	return true
 }
 
 func (g *game) validMovement(mv *move) error {
@@ -265,6 +283,17 @@ func (g *game) sendToEndGame(p *player, reason string) error {
 	default:
 		return errors.New("unknown reason")
 	}
+}
+
+func (g *game) completed() bool {
+	for _, bs := range g.blocks {
+		for _, b := range bs {
+			if b.s == 0 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (g *game) getBlock(x, y int) *block {
