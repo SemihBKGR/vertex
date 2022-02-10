@@ -80,11 +80,27 @@ document.getElementById("start-button").addEventListener("click", function (_) {
                 yourTitle.style.color = titleColorWait
                 opponentTitle.style.color = titleColorTurn
             } else {
-
                 fillBlock(gameBoard, block, blockOpponentColor, 3)
                 opponentScore.innerText = "Score: " + s
                 opponentTitle.style.color = titleColorWait
                 yourTitle.style.color = titleColorTurn
+            }
+            const isolatedCoordinates=message.data[dataIsolated]
+            if (isolatedCoordinates.length!==0){
+                console.log(isolatedCoordinates)
+                for (const isolatedCoordinate of isolatedCoordinates){
+                    const block=gameBoard.blocks[isolatedCoordinate.y][isolatedCoordinate.x]
+                    if (!p) {
+                        block.s = 1
+                    } else {
+                        block.s = 2
+                    }
+                    if (p === gp) {
+                        fillBlock(gameBoard, block, blockYourColor, 3)
+                    } else {
+                        fillBlock(gameBoard, block, blockOpponentColor, 3)
+                    }
+                }
             }
             tp = !tp
             fillMarkedBlocks(gameBoard, blockDefaultColor, 3)

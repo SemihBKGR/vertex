@@ -25,6 +25,7 @@ const (
 	dataWinner        = "winner"
 	dataScoreP1       = "score-p1"
 	dataScoreP2       = "score-p2"
+	dataIsolated      = "isolated"
 )
 
 type message struct {

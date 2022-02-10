@@ -147,10 +147,27 @@ func (g *game) startGame() {
 				b.s = 2
 				g.scoreP2++
 			}
+			ic := g.checkForIsolation(mv)
+			if icl := len(ic); icl > 0 {
+				log.Printf("Isolated: %d\n", len(ic))
+				if !mv.p {
+					for _, c := range ic {
+						g.blocks[c.Y][c.X].s = 1
+					}
+					g.scoreP1 += icl
+				} else {
+					for _, c := range ic {
+						g.blocks[c.Y][c.X].s = 2
+					}
+					g.scoreP2 += icl
+				}
+			}
+
 			data := make(map[string]interface{})
 			data[dataMoveX] = mv.x
 			data[dataMoveY] = mv.y
 			data[dataPlayer] = mv.p
+			data[dataIsolated] = ic
 			if !mv.p {
 				data[dataScore] = g.scoreP1
 			} else {
@@ -247,6 +264,102 @@ func (g *game) sendToEndGame(p *player, reason string) error {
 		return nil
 	default:
 		return errors.New("unknown reason")
+	}
+}
+
+func (g *game) getBlock(x, y int) *block {
+	if x < 0 || x >= g.width || y < 0 || y >= g.height {
+		return nil
+	}
+	return g.blocks[y][x]
+}
+
+func (g *game) checkForIsolation(mv *move) []*coordinate {
+	cs := make([]*coordinate, 0)
+	if b := g.getBlock(mv.x, mv.y+1); b != nil {
+		if ics := isolated(b, mv, g); ics != nil {
+			cs = append(cs, ics...)
+		}
+	}
+	if b := g.getBlock(mv.x, mv.y-1); b != nil {
+		if ics := isolated(b, mv, g); ics != nil {
+			cs = append(cs, ics...)
+		}
+	}
+	if b := g.getBlock(mv.x+1, mv.y); b != nil {
+		if ics := isolated(b, mv, g); ics != nil {
+			cs = append(cs, ics...)
+		}
+	}
+	if b := g.getBlock(mv.x-1, mv.y); b != nil {
+		if ics := isolated(b, mv, g); ics != nil {
+			cs = append(cs, ics...)
+		}
+	}
+	return cs
+}
+
+func isolated(ib *block, mv *move, g *game) []*coordinate {
+	if ib.s != 0 {
+		return nil
+	}
+	m := make(map[int]interface{})
+	m[blockId(ib, g.width)] = nil
+	l := 0
+	for l != len(m) {
+		l = len(m)
+		for bi := range m {
+			x, y := bi%g.width, bi/g.width
+			if b := g.getBlock(x, y+1); b != nil {
+				if b.s == 0 {
+					m[blockId(b, g.width)] = nil
+				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
+					return nil
+				}
+			}
+			if b := g.getBlock(x, y-1); b != nil {
+				if b.s == 0 {
+					m[blockId(b, g.width)] = nil
+				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
+					return nil
+				}
+			}
+			if b := g.getBlock(x+1, y); b != nil {
+				if b.s == 0 {
+					m[blockId(b, g.width)] = nil
+				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
+					return nil
+				}
+			}
+			if b := g.getBlock(x-1, y); b != nil {
+				if b.s == 0 {
+					m[blockId(b, g.width)] = nil
+				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
+					return nil
+				}
+			}
+		}
+	}
+	if len(m) == 0 {
+		return nil
+	}
+	cs := make([]*coordinate, len(m))
+	i := 0
+	for bi := range m {
+		cs[i] = coordinateOfId(bi, g.width)
+		i++
+	}
+	return cs
+}
+
+func blockId(b *block, width int) int {
+	return b.y*width + b.x
+}
+
+func coordinateOfId(blockId int, width int) *coordinate {
+	return &coordinate{
+		X: blockId % width,
+		Y: blockId / width,
 	}
 }
 
