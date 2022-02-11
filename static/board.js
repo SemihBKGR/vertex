@@ -86,7 +86,11 @@ function addGridActionListener(gameBoard, blockHoverColor, blockDefaultColor, bl
     })
     gameBoard.canvas.addEventListener("mouseleave", function (_) {
         if (hoverBlock !== undefined && hoverBlock.s === 0) {
-            fillBlock(gameBoard, hoverBlock, "white", 3)
+            if (hoverBlock.m) {
+                fillBlock(gameBoard, hoverBlock, blockHighlightedColor, 3)
+            } else {
+                fillBlock(gameBoard, hoverBlock, blockDefaultColor, 3)
+            }
         }
         hoverBlock = undefined
     })
@@ -96,7 +100,10 @@ function getBlock(gameBoard, mousePosition) {
     let x = Math.floor(mousePosition.x / gameBoard.blockWidth)
     let y = Math.floor(mousePosition.y / gameBoard.blockHeight)
     if (gameBoard.width > x && gameBoard.height > y) {
-        return gameBoard.blocks[y][x]
+        const blocks=gameBoard.blocks[y]
+        if (blocks!==undefined){
+            return blocks[x]
+        }
     }
     return undefined
 }
@@ -167,7 +174,7 @@ function clearBoard(gameBoard) {
         for (const block of blocks) {
             block.s = 0
             block.m = 0
-            fillBlock(gameBoard, block, "white", 3)
+            fillBlock(gameBoard, block, blockDefaultColor, 3)
         }
     }
 }
