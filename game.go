@@ -8,8 +8,8 @@ import (
 
 const defaultWidth = 20
 const defaultHeight = 15
-const defaultMinWallCount = 10
-const defaultMaxWallCount = 30
+const defaultMinWallCount = 40
+const defaultMaxWallCount = 50
 
 const reasonDisconnect = "disconnect"
 const reasonResign = "resign"
@@ -43,12 +43,6 @@ func newGame(p1, p2 *player) (*game, []*coordinate, []*coordinate, []*coordinate
 		}
 		blocks[i] = blocksRow
 	}
-	/*
-		coordinates := randomCoordinate(defaultMinWallCount, defaultMaxWallCount, defaultWidth, defaultHeight)
-		for _, coordinate := range coordinates {
-			blocks[coordinate.Y][coordinate.X].s = -1
-		}
-	*/
 
 	c1im1 := &coordinate{
 		X: defaultWidth/2 + 1,
@@ -72,6 +66,11 @@ func newGame(p1, p2 *player) (*game, []*coordinate, []*coordinate, []*coordinate
 	blocks[c1im2.Y][c1im1.X].s = 2
 	blocks[c2im2.Y][c2im1.X].s = 2
 
+	wc := randomCoordinates(defaultMinWallCount, defaultMaxWallCount, defaultWidth, defaultHeight, []*coordinate{c1im1, c2im1, c1im2, c1im2})
+	for _, coordinate := range wc {
+		blocks[coordinate.Y][coordinate.X].s = -1
+	}
+
 	g := &game{
 		move:    make(chan *move),
 		end:     make(chan *end),
@@ -81,12 +80,10 @@ func newGame(p1, p2 *player) (*game, []*coordinate, []*coordinate, []*coordinate
 		player1: p1,
 		player2: p2,
 	}
-	//return g, coordinates
-	return g, make([]*coordinate, 0), []*coordinate{c1im1, c2im1}, []*coordinate{c1im2, c2im2}
+	return g, wc, []*coordinate{c1im1, c2im1}, []*coordinate{c1im2, c2im2}
 }
 
 func (g *game) startGame() {
-	log.Printf("game has been started")
 	for {
 		select {
 		case e := <-g.end:
@@ -114,7 +111,6 @@ func (g *game) moveGame(mv *move) bool {
 	}
 	ic := g.checkForIsolation(mv)
 	if icl := len(ic); icl > 0 {
-		log.Printf("Isolated: %d\n", len(ic))
 		if !mv.p {
 			for _, c := range ic {
 				g.blocks[c.Y][c.X].s = 1
@@ -333,7 +329,7 @@ func isolated(ib *block, mv *move, g *game) []*coordinate {
 		return nil
 	}
 	m := make(map[int]interface{})
-	m[blockId(ib, g.width)] = nil
+	m[blockID(ib, g.width)] = nil
 	l := 0
 	for l != len(m) {
 		l = len(m)
@@ -341,54 +337,51 @@ func isolated(ib *block, mv *move, g *game) []*coordinate {
 			x, y := bi%g.width, bi/g.width
 			if b := g.getBlock(x, y+1); b != nil {
 				if b.s == 0 {
-					m[blockId(b, g.width)] = nil
+					m[blockID(b, g.width)] = nil
 				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
 					return nil
 				}
 			}
 			if b := g.getBlock(x, y-1); b != nil {
 				if b.s == 0 {
-					m[blockId(b, g.width)] = nil
+					m[blockID(b, g.width)] = nil
 				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
 					return nil
 				}
 			}
 			if b := g.getBlock(x+1, y); b != nil {
 				if b.s == 0 {
-					m[blockId(b, g.width)] = nil
+					m[blockID(b, g.width)] = nil
 				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
 					return nil
 				}
 			}
 			if b := g.getBlock(x-1, y); b != nil {
 				if b.s == 0 {
-					m[blockId(b, g.width)] = nil
+					m[blockID(b, g.width)] = nil
 				} else if (b.s == 1 && mv.p) || (b.s == 2 && !mv.p) {
 					return nil
 				}
 			}
 		}
 	}
-	if len(m) == 0 {
-		return nil
-	}
 	cs := make([]*coordinate, len(m))
 	i := 0
 	for bi := range m {
-		cs[i] = coordinateOfId(bi, g.width)
+		cs[i] = coordinateOfID(bi, g.width)
 		i++
 	}
 	return cs
 }
 
-func blockId(b *block, width int) int {
+func blockID(b *block, width int) int {
 	return b.y*width + b.x
 }
 
-func coordinateOfId(blockId int, width int) *coordinate {
+func coordinateOfID(blockID int, width int) *coordinate {
 	return &coordinate{
-		X: blockId % width,
-		Y: blockId / width,
+		X: blockID % width,
+		Y: blockID / width,
 	}
 }
 
@@ -409,10 +402,15 @@ type end struct {
 	player bool
 }
 
-func randomCoordinate(minWallCount, maxWallCount, width, height int) []*coordinate {
-	count := int(rand.Int31n(int32(maxWallCount-minWallCount))) + minWallCount
+func randomCoordinates(min, max, width, height int, exclude []*coordinate) []*coordinate {
+	count := int(rand.Int31n(int32(max-min))) + min
 	coordinates := make([]*coordinate, count)
 	coordinateMap := make(map[*coordinate]interface{})
+	if exclude != nil {
+		for _, ec := range exclude {
+			coordinateMap[ec] = nil
+		}
+	}
 	for i := 0; i < count; {
 		x := int(rand.Int31n(int32(width)))
 		y := int(rand.Int31n(int32(height)))

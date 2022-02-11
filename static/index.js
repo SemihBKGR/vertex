@@ -114,7 +114,7 @@ document.getElementById("start-button").addEventListener("click", function (_) {
             document.getElementById("queue-button").textContent = "Join"
             yourTitle.style.color = titleColorWait
             opponentTitle.style.color = titleColorWait
-            resignButton.style.visibility="hidden"
+            resignButton.style.visibility = "hidden"
         }
     })
 })
@@ -153,9 +153,9 @@ const opponentTitle = document.getElementById("opponent-title")
 const yourScore = document.getElementById("your-score")
 const opponentScore = document.getElementById("opponent-score")
 
-const resignButton=document.getElementById("resign-button")
+const resignButton = document.getElementById("resign-button")
 
-resignButton.addEventListener("click",function (_){
+resignButton.addEventListener("click", function (_) {
     const data = new Map()
     data[dataReason] = reasonResign
     const message = new Message(actionEnd)
@@ -169,6 +169,6 @@ function prepareForMatch() {
     opponentTitle.style.color = titleColorWait
     yourScore.innerText = "Score: 0"
     opponentScore.innerText = "Score: 0"
-    resignButton.style.visibility="visible"
+    resignButton.style.visibility = "visible"
 }
 
